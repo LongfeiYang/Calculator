@@ -1,0 +1,278 @@
+package com.ylf.calculatorinycy;
+
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.widget.TextView;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
+import java.util.Stack;
+
+/**
+ * 9+（3-1）*3+10/2
+ */
+public class MainActivity extends AppCompatActivity {
+    private TextView infixTV;
+    private TextView contentTV;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        infixTV = (TextView) findViewById(R.id.infix);
+        contentTV = (TextView) findViewById(R.id.content);
+
+        String infixExpression = "9 + ( 3 - 1 ) * 3 + 10 / 2";
+        String suffixExpression = tranInfix2Suffix(infixExpression);
+
+
+        infixTV.setText(infixExpression);
+        contentTV.setText(suffixExpression);
+    }
+
+    /**
+     * 规则：从左到右遍历中缀表达式的每个数字和符号，若是数字就输出，即成为后缀表达式的一部分；
+     * 若是符号，则判断其与栈顶符号的优先级，是右括号或优先级低于栈顶符号（乘除优先加减）则栈顶元素依次出栈并输出，
+     * 并将当前符号进栈，一直到最终输出后缀表达式为止。
+     *
+     * 9+（3-1）*3+10/2
+     *
+     * @param infixExpression
+     * @return
+     */
+    private String tranInfix2Suffix(String infixExpression){
+        Stack<Character> operatorStack = new Stack<>();
+        Stack<Object> operatorStack2 = new Stack<>();
+
+        StringBuffer buffer = new StringBuffer();
+        List<Object> list = new ArrayList<>();
+        List<Object> list2 = new ArrayList<>();
+
+        String[] operatorArray = infixExpression.split(" ");
+        for(String item : operatorArray){
+            if("+".equals(item)){
+                list.add(new Plus());
+            }else if("-".equals(item)){
+                list.add(new Minus());
+            }else if("*".equals(item)){
+                list.add(new Multiply());
+            }else if("/".equals(item)){
+                list.add(new Division());
+            }else if("(".equals(item)){
+                list.add(new LeftParenthesis());
+            }else if(")".equals(item)){
+                list.add(new RightParenthesis());
+            }else{
+                list.add(new Data(item));
+            }
+        }
+
+        for(Object o : list){
+            if(o instanceof Data){
+                list2.add(o);
+            }else if(o instanceof Plus || o instanceof Minus){
+                if(operatorStack2.empty()){
+                    operatorStack2.push(o);
+                }else{
+                    Object top = operatorStack2.peek();
+                    if(top instanceof Data){
+
+                    }else{
+                        Priority p = (Priority) operatorStack2.peek();
+                        if(((Priority)o).getPriority() < p.getPriority()){//优先级低于栈顶符号（乘除优先加减）
+                            list2.add(operatorStack2.pop());
+                            list2.add(o);
+                        }else{
+                            list2.add(o);
+                        }
+                    }
+                }
+            }else if(o instanceof Multiply || o instanceof Division){
+                if(operatorStack2.empty()){
+                    operatorStack2.push(o);
+                }else{
+                    Object top = operatorStack2.peek();
+                    if(top instanceof Data){
+
+                    }else{
+                        Priority p = (Priority) operatorStack2.peek();
+                        if(((Priority)o).getPriority() < p.getPriority()){//优先级低于栈顶符号（乘除优先加减）
+                            list2.add(operatorStack2.pop());
+                            list2.add(o);
+                        }else{
+                            list2.add(o);
+                        }
+                    }
+                }
+            }else if(o instanceof LeftParenthesis){
+                operatorStack2.push(o);
+            }else if(o instanceof RightParenthesis){
+                Object top = operatorStack2.pop();
+                while(top instanceof LeftParenthesis){
+                    list2.add(top);
+                    top = operatorStack2.pop();
+                }
+            }
+        }
+
+        while (!operatorStack2.empty()){
+            list2.add(operatorStack2.pop());
+        }
+
+//        for(String c : operatorArray){
+//            if(c >= 48 && c <= 57){
+//                buffer.append(c);
+//            }else if(c == '+' || c == '-'){
+//                if(operatorStack.empty()){
+//                    operatorStack.push(c);
+//                }else{
+//                    char top = operatorStack.peek();
+//                    if(getPriority(c) < getPriority(top)){//优先级低于栈顶符号（乘除优先加减）
+//                        buffer.append(operatorStack.pop());
+//                        buffer.append(c);
+//                    }else{
+//                        operatorStack.push(c);
+//                    }
+//                }
+//            }else if(c == '*' || c == '/'){
+//                if(operatorStack.empty()){
+//                    operatorStack.push(c);
+//                }else{
+//                    char top = operatorStack.peek();
+//                    if(getPriority(c) < getPriority(top)){//优先级低于栈顶符号（乘除优先加减）
+//                        buffer.append(operatorStack.pop());
+//                        operatorStack.push(c);
+//                    }else{
+//                        operatorStack.push(c);
+//                    }
+//                }
+//            }else if(c == '('){
+//                operatorStack.push(c);
+//            }else if(c == ')'){
+//                char top = operatorStack.pop();
+//                while(top != '('){
+//                    buffer.append(top);
+//                    top = operatorStack.pop();
+//                }
+//            }
+//        }
+//        while (!operatorStack.empty()){
+//            buffer.append(operatorStack.pop());
+//        }
+
+        return buffer.toString();
+    }
+
+    private int getPriority(char c){
+        int p = 0;
+        switch (c){
+            case '+':{
+                p = 2;
+                break;
+            }
+            case '-':{
+                p = 2;
+                break;
+            }case '*':{
+                p = 3;
+                break;
+            }
+            case '/':{
+                p = 3;
+                break;
+            }
+
+        }
+        return p;
+    }
+
+    interface Priority{
+        int getPriority();
+    }
+
+    class Data implements Priority{
+        int data;
+        public Data(String str){
+            data = Integer.parseInt(str);
+        }
+
+        @Override
+        public int getPriority() {
+            return 0;
+        }
+    }
+
+    abstract class Operator{
+        char c;
+        int priority;
+        abstract int calculate();
+    }
+
+    class Plus extends Operator implements Priority{
+        int a;
+        int b;
+
+        int calculate(){
+            return a + b;
+        }
+
+        @Override
+        public int getPriority() {
+            return 2;
+        }
+    }
+
+    class Minus extends Operator implements Priority{
+        int a;
+        int b;
+        int calculate(){
+            return a - b;
+        }
+
+        @Override
+        public int getPriority() {
+            return 2;
+        }
+    }
+
+    class Multiply extends Operator implements Priority{
+        int a;
+        int b;
+        int calculate(){
+            return a * b;
+        }
+
+        @Override
+        public int getPriority() {
+            return 3;
+        }
+    }
+
+    class Division extends Operator implements Priority{
+        int a;
+        int b;
+        int calculate(){
+            if (b == 0){
+                throw new IllegalArgumentException("除数不能为零！");
+            }
+            return a / b;
+        }
+
+        @Override
+        public int getPriority() {
+            return 3;
+        }
+    }
+
+    class LeftParenthesis{
+
+    }
+    class RightParenthesis{
+
+    }
+
+
+
+
+}
